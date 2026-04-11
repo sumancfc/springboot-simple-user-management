@@ -1,0 +1,16 @@
+spring.application.name=usermanagement
+# Database Connection
+spring.datasource.url=jdbc:postgresql://localhost:5432/your_database_name
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+
+# Hibernate Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# A long, random string (min 32 characters)
+jwt.secret=your_secret_key_here
+# 24 hours in milliseconds
+jwt.expiration=86400000
