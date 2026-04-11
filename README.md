@@ -50,3 +50,38 @@ mvn spring-boot:run
 - **GET** `/api/v1/users`: Get all users (requires authentication).
 - **GET** `/api/v1/users/{id}`: Get user by ID (requires authentication).
 - **DELETE** `/api/v1/users/{id}`: Delete user by ID (requires authentication).
+- **PUT** `/api/v1/users/{id}`: Update user details (requires authentication).
+- **POST** `/api/v1/users/logout`: Logout a user (requires authentication).
+- **POST** `/api/v1/users/refresh-token`: Refresh JWT token (requires authentication).
+- **POST** `/api/v1/users/change-password`: Change user password (requires authentication).
+- **POST** `/api/v1/users/reset-password`: Reset user password (requires authentication).
+- **POST** `/api/v1/users/assign-role`: Assign role to user (requires authentication).
+- **POST** `/api/v1/users/revoke-role`: Revoke role from user (requires authentication).
+- **GET** `/api/v1/users/roles`: Get all roles (requires authentication).
+- **GET** `/api/v1/users/permissions`: Get all permissions (requires authentication).
+- **POST** `/api/v1/users/assign-permission`: Assign permission to user (requires authentication).
+- **POST** `/api/v1/users/revoke-permission`: Revoke permission from user (requires authentication).
+- **GET** `/api/v1/users/permissions/{userId}`: Get user permissions (requires authentication).
+- **GET** `/api/v1/users/roles/{userId}`: Get user roles (requires authentication).
+- **POST** `/api/v1/users/enable`: Enable user account (requires authentication).
+- **POST** `/api/v1/users/disable`: Disable user account (requires authentication).
+- **POST** `/api/v1/users/lock`: Lock user account (requires authentication).
+- **POST** `/api/v1/users/unlock`: Unlock user account (requires authentication).
+- **POST** `/api/v1/users/verify-email`: Verify user email (requires authentication).
+- **POST** `/api/v1/users/resend-verification-email`: Resend email verification (requires authentication).
+- **POST** `/api/v1/users/forgot-password`: Initiate password reset (requires authentication).
+- **POST** `/api/v1/users/reset-password`: Complete password reset (requires authentication).
+- **POST** `/api/v1/users/update-profile`: Update user profile (requires authentication).
+- **GET** `/api/v1/users/profile`: Get user profile (requires authentication).
+- **POST** `/api/v1/users/upload-avatar`: Upload user avatar (requires authentication).
+- **GET** `/api/v1/users/avatar`: Get user avatar (requires authentication).
+- **POST** `/api/v1/users/remove-avatar`: Remove user avatar (requires authentication).
+- **POST** `/api/v1/users/2fa/enable`: Enable two-factor authentication (requires authentication).
+- **POST** `/api/v1/users/2fa/disable`: Disable two-factor authentication (requires authentication).
+- **POST** `/api/v1/users/2fa/verify`: Verify two-factor authentication code (requires authentication).
+- **POST** `/api/v1/users/2fa/generate`: Generate two-factor authentication secret (requires authentication).
+- **POST** `/api/v1/users/2fa/backup-codes`: Generate two-factor authentication backup codes (requires authentication).
+- **POST** `/api/v1/users/2fa/verify-backup-code`: Verify two-factor authentication backup code (requires authentication).
+- **POST** `/api/v1/users/2fa/regenerate-backup-codes`: Regenerate two-factor authentication backup codes (requires authentication).
+- **POST** `/api/v1/users/2fa/remove`: Remove two-factor authentication (requires authentication).
+- **POST** `/api/v1/users/2fa/status`: Get two-factor authentication status (requires authentication).
