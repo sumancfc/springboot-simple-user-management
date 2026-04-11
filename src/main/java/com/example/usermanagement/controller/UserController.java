@@ -47,4 +47,15 @@ public class UserController {
         return userService.getUserById(id).map(user -> ResponseEntity.ok(user))
                 .orElse(ResponseEntity.status(404).body(null));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteUserById(@PathVariable Long id) {
+        boolean isDeleted = userService.deleteUser(id);
+
+        if(isDeleted) {
+            return ResponseEntity.ok("User with ID " + id + " has been deleted.");
+        } else {
+            return ResponseEntity.status(404).body("User not found with ID " + id);
+        }
+    }
 }

@@ -49,3 +49,4 @@ mvn spring-boot:run
 - **POST** `/api/v1/users/login`: Authenticate a user and receive a JWT token
 - **GET** `/api/v1/users`: Get all users (requires authentication).
 - **GET** `/api/v1/users/{id}`: Get user by ID (requires authentication).
+- **DELETE** `/api/v1/users/{id}`: Delete user by ID (requires authentication).
