@@ -50,7 +50,7 @@ public class UserController {
 
             return ResponseEntity.ok(response);
         } else {
-            return ResponseEntity.status(401).body("Invalid credentials");
+            return ResponseEntity.status(401).body(java.util.Map.of("message", "Invalid credentials"));
         }
     }
 
