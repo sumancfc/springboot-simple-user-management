@@ -4,6 +4,8 @@ import com.example.usermanagement.config.JwtUtils;
 import com.example.usermanagement.entity.User;
 import com.example.usermanagement.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,9 +26,16 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody User user) {
-        userService.userRegister(user);
-        return ResponseEntity.ok("User registered successfully with encrypted password!");
+    public ResponseEntity<?> register(@Valid @RequestBody User user) {
+        try {
+            userService.userRegister(user);
+            // Returning a Map ensures the response is {"message": "..."}
+            return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
+        } catch (DataIntegrityViolationException e) {
+            // Handle that "root" duplicate username error specifically
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "Username or Email already exists"));
+        }
     }
 
     @PostMapping("/login")
