@@ -6,11 +6,14 @@ import com.example.usermanagement.service.TokenBlacklistService;
 import com.example.usermanagement.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.boot.security.autoconfigure.web.reactive.ReactiveWebSecurityAutoConfiguration;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,11 +25,13 @@ public class UserController {
     private final UserService userService;
     private final JwtUtils jwtUtils;
     private final TokenBlacklistService tokenBlacklistService;
+    private final RedisTemplate<String, String> redisTemplate;
 
-    public UserController(UserService userService, JwtUtils jwtUtils, TokenBlacklistService tokenBlacklistService) {
+    public UserController(UserService userService, JwtUtils jwtUtils, TokenBlacklistService tokenBlacklistService, RedisTemplate redisTemplate) {
         this.userService = userService;
         this.jwtUtils = jwtUtils;
         this.tokenBlacklistService = tokenBlacklistService;
+        this.redisTemplate = redisTemplate;
     }
 
     @PostMapping("/register")
@@ -47,10 +52,25 @@ public class UserController {
         Optional<User> authenticatedUser = userService.userLogin(user.getUsername(), user.getPassword());
 
         if(authenticatedUser.isPresent()) {
-            // Create the token for the verified user
-            String token = jwtUtils.generateToken(authenticatedUser.get().getUsername());
+            String username = authenticatedUser.get().getUsername();
 
-            Map<String, String> response = java.util.Map.of("token", token);
+            // Generate both tokens
+            String accessToken = jwtUtils.generateToken(username);
+            String refreshToken = jwtUtils.generateRefreshToken();
+
+            // Save Refresh Token in Redis (Linked to username)
+            // We set this to 7 days so the user stays logged in
+            redisTemplate.opsForValue().set(
+                    "refresh:" + refreshToken,
+                    username,
+                    Duration.ofDays(7)
+            );
+
+            // Return both to the frontend
+            Map<String, String> response = java.util.Map.of(
+                    "accessToken", accessToken,
+                    "refreshToken", refreshToken
+            );
 
             return ResponseEntity.ok(response);
         } else {
@@ -83,23 +103,49 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request) {
-        String token = extractToken(request);
+    public ResponseEntity<?> logout(HttpServletRequest request, @RequestBody Map<String, String> body) {
+        String accessToken = extractToken(request);
+        String refreshToken = body.get("refreshToken");
 
-        if (token != null) {
-            // Extract username just for the response message
-            String username = jwtUtils.getUsernameFromToken(token);
-            long ttl = jwtUtils.getRemainingTime(token);
+        if (accessToken != null) {
+            // Blacklist the current Access Token
+            String username = jwtUtils.getUsernameFromToken(accessToken);
+            long ttl = jwtUtils.getRemainingTime(accessToken);
+            tokenBlacklistService.blacklistToken(accessToken, ttl);
 
-            tokenBlacklistService.blacklistToken(token, ttl);
+            // Delete the Refresh Token from Redis
+            if (refreshToken != null) {
+                redisTemplate.delete("refresh:" + refreshToken);
+            }
 
             return ResponseEntity.ok(Map.of(
                     "message", "Logout successful",
                     "user", username,
-                    "expiry_cleared_in_seconds", ttl
+                    "status", "Tokens invalidated and session cleared"
             ));
         }
-        return ResponseEntity.badRequest().body(Map.of("error", "No token provided"));
+
+        return ResponseEntity.badRequest().body(Map.of("error", "No access token provided"));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+        String refreshToken = request.get("refreshToken");
+
+        // Look up the refresh token in Redis
+        String username = redisTemplate.opsForValue().get("refresh_" + refreshToken);
+
+        if(username == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "Invalid or expired refresh token"));
+        }
+
+        // Generate a fresh access token
+        String newAccessToken = jwtUtils.generateToken(username);
+
+        return ResponseEntity.ok(Map.of(
+                "accessToken", newAccessToken,
+                "refreshToken", refreshToken
+        ));
     }
 
     private String extractToken(HttpServletRequest request) {

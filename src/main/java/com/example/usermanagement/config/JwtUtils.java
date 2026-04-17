@@ -68,4 +68,8 @@ public class JwtUtils {
             return 0;
         }
     }
+
+    public String generateRefreshToken() {
+        return java.util.UUID.randomUUID().toString();
+    }
 }
