@@ -2,7 +2,9 @@ package com.example.usermanagement.controller;
 
 import com.example.usermanagement.config.JwtUtils;
 import com.example.usermanagement.entity.User;
+import com.example.usermanagement.service.TokenBlacklistService;
 import com.example.usermanagement.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -19,10 +21,12 @@ public class UserController {
 
     private final UserService userService;
     private final JwtUtils jwtUtils;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public UserController(UserService userService, JwtUtils jwtUtils) {
+    public UserController(UserService userService, JwtUtils jwtUtils, TokenBlacklistService tokenBlacklistService) {
         this.userService = userService;
         this.jwtUtils = jwtUtils;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @PostMapping("/register")
@@ -76,5 +80,33 @@ public class UserController {
         } else {
             return ResponseEntity.status(404).body("User not found with ID " + id);
         }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        String token = extractToken(request);
+
+        if (token != null) {
+            // Extract username just for the response message
+            String username = jwtUtils.getUsernameFromToken(token);
+            long ttl = jwtUtils.getRemainingTime(token);
+
+            tokenBlacklistService.blacklistToken(token, ttl);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Logout successful",
+                    "user", username,
+                    "expiry_cleared_in_seconds", ttl
+            ));
+        }
+        return ResponseEntity.badRequest().body(Map.of("error", "No token provided"));
+    }
+
+    private String extractToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7); // Remove "Bearer " prefix
+        }
+        return null;
     }
 }
