@@ -1,6 +1,7 @@
 package com.example.usermanagement.config;
 
 import com.example.usermanagement.service.TokenBlacklistService;
+import com.example.usermanagement.utils.SecurityUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,40 +29,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String path = request.getServletPath();
+        String token = SecurityUtils.extractToken(request);
 
-        // Skip token validation for public endpoints
-        if (path.equals("/api/v1/users/register") || path.equals("/api/v1/users/login")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        try {
+            if (token != null) {
+                // Blacklist Check
+                if (tokenBlacklistService.isBlacklisted(token)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"message\": \"Session expired. Please login again.\"}");
+                    return;
+                }
 
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-
-            if (tokenBlacklistService.isBlacklisted(token)) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"message\": \"This token has been logged out. Please login again.\"}");
-                return;
-            }
-
-            try {
                 if (jwtUtils.validateToken(token)) {
                     String username = jwtUtils.getUsernameFromToken(token);
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(username, null, new ArrayList<>());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    // Invalid token
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"message\": \"Invalid token\"}");
+                    return;
                 }
-            } catch (Exception e) {
-                logger.error("Could not set user authentication in security context", e);
+            } else {
+                // No token provided - let Spring Security handle it based on authorization rules
+                // The endpoint's @Secured or authenticated() requirement will reject it
             }
+        } catch (Exception e) {
+            logger.error("Could not set user authentication", e);
         }
 
-        // Continue the chain
         filterChain.doFilter(request, response);
     }
 }

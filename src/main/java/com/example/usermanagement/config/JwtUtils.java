@@ -72,4 +72,14 @@ public class JwtUtils {
     public String generateRefreshToken() {
         return java.util.UUID.randomUUID().toString();
     }
+
+    public long getExpirationTimeFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigninKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getExpiration()
+                .getTime(); // Returns absolute timestamp in ms
+    }
 }

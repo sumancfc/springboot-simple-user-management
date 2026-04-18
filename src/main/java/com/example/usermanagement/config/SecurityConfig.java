@@ -37,22 +37,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthEntryPoint))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // ALWAYS permit OPTIONS requests for CORS handshakes
-                        .requestMatchers(org.springframework.web.cors.CorsUtils::isPreFlightRequest).permitAll()
+            .csrf(csrf -> csrf.disable())
+            .cors(Customizer.withDefaults())
+            .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthEntryPoint))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                    // Permit CORS pre-flight
+                    .requestMatchers(org.springframework.web.cors.CorsUtils::isPreFlightRequest).permitAll()
 
-                        // Permit only registration and login
-                        .requestMatchers("/api/v1/users/register", "/api/v1/users/login", "/error").permitAll()
+                    // UPDATED: Permit all Auth Controller endpoints
+                    // Using the wildcard /** ensures login, register, and refresh-token are all open
+                    .requestMatchers("/api/v1/auth/**").permitAll()
+                    // Permit system error path
+                    .requestMatchers("/error").permitAll()
+                    .requestMatchers("/api/v1/users", "/api/v1/users/**").authenticated()
+                    .anyRequest().authenticated()
+            );
 
-                        // Everything else requires a valid JWT
-                        .anyRequest().authenticated()
-                );
-
-        // No need to cast (Filter) if JwtAuthenticationFilter extends OncePerRequestFilter
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
