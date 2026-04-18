@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +37,7 @@ public class AuthService {
         // Hash the password
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
+        user.setRoles(new HashSet<>(Set.of("ROLE_USER")));
         userRepository.save(user);
     }
 
@@ -57,7 +60,7 @@ public class AuthService {
         }
 
         // Generate New Tokens
-        String accessToken = jwtUtils.generateToken(user.getUsername());
+        String accessToken = jwtUtils.generateToken(user.getUsername(), user.getRoles());
         String refreshToken = jwtUtils.generateRefreshToken();
 
         // Update Redis: Active Session (matches JWT lifespan)
@@ -78,6 +81,7 @@ public class AuthService {
                 accessToken,
                 refreshToken,
                 user.getUsername(),
+                user.getRoles(),
                 "Login Successful!"
         );
     }
@@ -107,10 +111,13 @@ public class AuthService {
             throw new RuntimeException("Session expired. Please log in again.");
         }
 
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found for the given session."));
+
         redisTemplate.delete("refresh:" + refreshToken);
 
         // Generate only a new Access Token
-        String newAccessToken = jwtUtils.generateToken(username);
+        String newAccessToken = jwtUtils.generateToken(username, user.getRoles());
 
         String newRefreshToken = jwtUtils.generateRefreshToken();
 
@@ -126,11 +133,12 @@ public class AuthService {
                 Duration.ofDays(7)
         );
 
-        // Return a response so frontend can update its memory
+        // Return a response
         return new LoginResponse(
                 newAccessToken,
                 newRefreshToken,
                 username,
+                user.getRoles(),
                 "Token refreshed and rotated successfully"
         );
     }

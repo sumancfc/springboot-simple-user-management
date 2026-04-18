@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 @Component
 public class JwtUtils {
@@ -23,8 +25,9 @@ public class JwtUtils {
     }
 
     // Create a Token
-    public String generateToken(String username) {
-        return Jwts.builder().setSubject(username).setIssuedAt(new Date()).setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+    public String generateToken(String username, Set<String> roles) {
+        return Jwts.builder().setSubject(username).claim("roles", roles)
+                .setIssuedAt(new Date()).setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(getSigninKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -81,5 +84,15 @@ public class JwtUtils {
                 .getBody()
                 .getExpiration()
                 .getTime(); // Returns absolute timestamp in ms
+    }
+
+    public List<String> getRolesFromToken(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSigninKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        return claims.get("roles", List.class);
     }
 }
