@@ -45,43 +45,52 @@ mvn spring-boot:run
 ```
 
 ### 5. API Endpoints
-- **POST** `/api/v1/users/register`: Register a new user.
-- **POST** `/api/v1/users/login`: Authenticate a user and receive a JWT token
-- **GET** `/api/v1/users`: Get all users (requires authentication).
-- **GET** `/api/v1/users/{id}`: Get user by ID (requires authentication).
-- **DELETE** `/api/v1/users/{id}`: Delete user by ID (requires authentication).
-- **PUT** `/api/v1/users/{id}`: Update user details (requires authentication).
-- **POST** `/api/v1/users/logout`: Logout a user (requires authentication).
-- **POST** `/api/v1/users/refresh-token`: Refresh JWT token (requires authentication).
-- **POST** `/api/v1/users/change-password`: Change user password (requires authentication).
-- **POST** `/api/v1/users/reset-password`: Reset user password (requires authentication).
-- **POST** `/api/v1/users/assign-role`: Assign role to user (requires authentication).
-- **POST** `/api/v1/users/revoke-role`: Revoke role from user (requires authentication).
-- **GET** `/api/v1/users/roles`: Get all roles (requires authentication).
-- **GET** `/api/v1/users/permissions`: Get all permissions (requires authentication).
-- **POST** `/api/v1/users/assign-permission`: Assign permission to user (requires authentication).
-- **POST** `/api/v1/users/revoke-permission`: Revoke permission from user (requires authentication).
-- **GET** `/api/v1/users/permissions/{userId}`: Get user permissions (requires authentication).
-- **GET** `/api/v1/users/roles/{userId}`: Get user roles (requires authentication).
-- **POST** `/api/v1/users/enable`: Enable user account (requires authentication).
-- **POST** `/api/v1/users/disable`: Disable user account (requires authentication).
-- **POST** `/api/v1/users/lock`: Lock user account (requires authentication).
-- **POST** `/api/v1/users/unlock`: Unlock user account (requires authentication).
-- **POST** `/api/v1/users/verify-email`: Verify user email (requires authentication).
-- **POST** `/api/v1/users/resend-verification-email`: Resend email verification (requires authentication).
-- **POST** `/api/v1/users/forgot-password`: Initiate password reset (requires authentication).
-- **POST** `/api/v1/users/reset-password`: Complete password reset (requires authentication).
-- **POST** `/api/v1/users/update-profile`: Update user profile (requires authentication).
-- **GET** `/api/v1/users/profile`: Get user profile (requires authentication).
-- **POST** `/api/v1/users/upload-avatar`: Upload user avatar (requires authentication).
-- **GET** `/api/v1/users/avatar`: Get user avatar (requires authentication).
-- **POST** `/api/v1/users/remove-avatar`: Remove user avatar (requires authentication).
-- **POST** `/api/v1/users/2fa/enable`: Enable two-factor authentication (requires authentication).
-- **POST** `/api/v1/users/2fa/disable`: Disable two-factor authentication (requires authentication).
-- **POST** `/api/v1/users/2fa/verify`: Verify two-factor authentication code (requires authentication).
-- **POST** `/api/v1/users/2fa/generate`: Generate two-factor authentication secret (requires authentication).
-- **POST** `/api/v1/users/2fa/backup-codes`: Generate two-factor authentication backup codes (requires authentication).
-- **POST** `/api/v1/users/2fa/verify-backup-code`: Verify two-factor authentication backup code (requires authentication).
-- **POST** `/api/v1/users/2fa/regenerate-backup-codes`: Regenerate two-factor authentication backup codes (requires authentication).
-- **POST** `/api/v1/users/2fa/remove`: Remove two-factor authentication (requires authentication).
-- **POST** `/api/v1/users/2fa/status`: Get two-factor authentication status (requires authentication).
+
+#### 🔐 Authentication & Account Recovery
+- **POST** `/api/v1/users/register`: Register a new user account (Public).
+- **POST** `/api/v1/users/login`: Authenticate and receive a JWT token (Public).
+- **POST** `/api/v1/users/logout`: Invalidate the current session/token.
+- **POST** `/api/v1/users/refresh-token`: Exchange a refresh token for a new access token.
+- **POST** `/api/v1/users/verify-email`: Verify user email via token.
+- **POST** `/api/v1/users/resend-verification-email`: Resend email verification link.
+- **POST** `/api/v1/users/forgot-password`: Initiate the password reset process (Public).
+- **POST** `/api/v1/users/reset-password`: Complete password reset using a secure token (Public).
+
+#### 👤 User Self-Service (Profile)
+- **GET** `/api/v1/users/profile`: Get the currently logged-in user's profile.
+- **PUT** `/api/v1/users/profile`: Update personal details (Bio, Full Name, etc.).
+- **POST** `/api/v1/users/change-password`: Update account password.
+- **POST** `/api/v1/users/upload-avatar`: Upload or update user profile picture.
+- **GET** `/api/v1/users/avatar`: View the current user's avatar.
+- **POST** `/api/v1/users/remove-avatar`: Delete the user's profile picture.
+
+#### 🛡️ Administrative Management (Admin Only)
+- **GET** `/api/v1/users`: Get a list of all users.
+- **GET** `/api/v1/users/{id}`: Get full user details by ID.
+- **DELETE** `/api/v1/users/{id}`: Permanently delete a user account.
+- **PUT** `/api/v1/users/{id}`: Administrative update of user details.
+- **POST** `/api/v1/users/assign-role`: Add a role to a user account.
+- **POST** `/api/v1/users/revoke-role`: Remove a role from a user account.
+- **GET** `/api/v1/users/roles`: List all available roles in the system.
+- **GET** `/api/v1/users/roles/{userId}`: Get roles specifically assigned to a user.
+- **POST** `/api/v1/users/enable`: Re-activate a disabled user account.
+- **POST** `/api/v1/users/disable`: Deactivate a user account.
+- **POST** `/api/v1/users/lock`: Manually lock a user account.
+- **POST** `/api/v1/users/unlock`: Unlock a previously locked account.
+
+#### 🔑 Permissions & RBAC (Admin Only)
+- **GET** `/api/v1/users/permissions`: Get a list of all system permissions.
+- **GET** `/api/v1/users/permissions/{userId}`: Get permissions assigned to a specific user.
+- **POST** `/api/v1/users/assign-permission`: Assign a specific permission to a user.
+- **POST** `/api/v1/users/revoke-permission`: Revoke a specific permission from a user.
+
+#### 🔢 Two-Factor Authentication (2FA)
+- **POST** `/api/v1/users/2fa/generate`: Generate 2FA secret and QR code.
+- **POST** `/api/v1/users/2fa/enable`: Enable 2FA after successful code verification.
+- **POST** `/api/v1/users/2fa/disable`: Turn off 2FA.
+- **POST** `/api/v1/users/2fa/verify`: Verify 2FA code during sensitive operations.
+- **POST** `/api/v1/users/2fa/status`: Check if 2FA is active for the current account.
+- **POST** `/api/v1/users/2fa/backup-codes`: Generate one-time use backup codes.
+- **POST** `/api/v1/users/2fa/verify-backup-code`: Use a backup code for account access.
+- **POST** `/api/v1/users/2fa/regenerate-backup-codes`: Create a new set of backup codes.
+- **POST** `/api/v1/users/2fa/remove`: Completely remove 2FA configuration.
