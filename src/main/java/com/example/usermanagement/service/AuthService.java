@@ -7,6 +7,7 @@ import com.example.usermanagement.dto.RegisterRequest;
 import com.example.usermanagement.entity.User;
 import com.example.usermanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
@@ -77,6 +79,13 @@ public class AuthService {
                 Duration.ofDays(7)
         );
 
+        // Store refresh token by user for validation during logout
+        redisTemplate.opsForValue().set(
+                "refresh_token_by_user:" + user.getUsername(),
+                refreshToken,
+                Duration.ofDays(7)
+        );
+
         return new LoginResponse(
                 accessToken,
                 refreshToken,
@@ -87,20 +96,36 @@ public class AuthService {
     }
 
     public void logout(String accessToken, String refreshToken) {
-        if (accessToken != null) {
-            // Blacklist the Access Token
-            String username = jwtUtils.getUsernameFromToken(accessToken);
-            long ttl = jwtUtils.getRemainingTime(accessToken);
-            tokenBlacklistService.blacklistToken(accessToken, ttl);
-
-            // Remove the Active Session tracking
-            redisTemplate.delete("active_session:" + username);
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new RuntimeException("Access Token is required"); // Throw instead of just logging
         }
 
+        // Get user from Access Token
+        String username = jwtUtils.getUsernameFromToken(accessToken);
+
+        // STRICT Refresh Token Validation
         if (refreshToken != null) {
-            // Delete the Refresh Token from Redis
+            String storedUsername = redisTemplate.opsForValue().get("refresh:" + refreshToken);
+
+            // If the token is old/not in Redis, it won't have a username associated with it
+            if (storedUsername == null || !storedUsername.equals(username)) {
+                log.warn("Invalid or expired refresh token provided for logout: {}", refreshToken);
+                throw new RuntimeException("Invalid or expired Refresh Token. Logout failed.");
+            }
+
+            // Only delete if validation passed
             redisTemplate.delete("refresh:" + refreshToken);
+            redisTemplate.delete("refresh_token_by_user:" + username);
         }
+
+        // Blacklist Access Token
+        long ttl = jwtUtils.getRemainingTime(accessToken);
+        if (ttl > 0) {
+            tokenBlacklistService.blacklistToken(accessToken, ttl);
+        }
+
+        // Kill Active Session
+        redisTemplate.delete("active_session:" + username);
     }
 
     public LoginResponse refreshSession(String refreshToken) {
@@ -130,6 +155,13 @@ public class AuthService {
         redisTemplate.opsForValue().set(
                 "refresh:" + newRefreshToken,
                 username,
+                Duration.ofDays(7)
+        );
+
+        // Update refresh token by user
+        redisTemplate.opsForValue().set(
+                "refresh_token_by_user:" + username,
+                newRefreshToken,
                 Duration.ofDays(7)
         );
 

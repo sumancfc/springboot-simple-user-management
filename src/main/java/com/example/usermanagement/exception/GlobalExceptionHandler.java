@@ -33,7 +33,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    // Handle Custom Runtime Exceptions (like "Username taken" or "Invalid credentials")
+    // Handle Custom Runtime Exceptions (like "Username taken" or "Invalid
+    // credentials")
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
         Map<String, Object> body = new HashMap<>();
@@ -51,7 +52,8 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        body.put("message", "An unexpected error occurred");
+        body.put("message", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred");
+        body.put("type", ex.getClass().getSimpleName());
 
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -60,7 +62,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleAccessDenied(AuthorizationDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
                 "message", "You do not have permission to access this resource",
-                "status", 403
-        ));
+                "status", 403));
     }
 }

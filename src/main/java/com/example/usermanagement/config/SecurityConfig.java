@@ -54,6 +54,14 @@ public class SecurityConfig {
                     .requestMatchers("/api/v1/auth/**").permitAll()
                     // Permit system error path
                     .requestMatchers("/error").permitAll()
+                    .requestMatchers(
+                            "/v3/api-docs",
+                            "/v3/api-docs/**",
+                            "/swagger-ui/**",
+                            "/swagger-ui.html",
+                            "/swagger-resources/**",
+                            "/webjars/**"
+                    ).permitAll()
                     .requestMatchers("/api/v1/users", "/api/v1/users/**").authenticated()
                     .anyRequest().authenticated()
             );

@@ -1,14 +1,13 @@
 package com.example.usermanagement.controller;
 
-import com.example.usermanagement.dto.LoginRequest;
-import com.example.usermanagement.dto.LoginResponse;
-import com.example.usermanagement.dto.RefreshRequest;
-import com.example.usermanagement.dto.RegisterRequest;
+import com.example.usermanagement.dto.*;
 import com.example.usermanagement.service.AuthService;
 import com.example.usermanagement.utils.SecurityUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,11 +37,17 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request, @RequestBody Map<String, String> body) {
+    public ResponseEntity<?> logout(HttpServletRequest request, @RequestBody LogoutRequest logoutRequest) {
         String accessToken = SecurityUtils.extractToken(request);
-        String refreshToken = body.get("refreshToken");
+        String refreshToken = logoutRequest.getRefreshToken();
+
+        if (accessToken == null || accessToken.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "No valid Access Token provided in headers"));
+        }
 
         authService.logout(accessToken, refreshToken);
+        SecurityContextHolder.clearContext();
 
         return ResponseEntity.ok(Map.of("message", "Logout successful"));
     }
