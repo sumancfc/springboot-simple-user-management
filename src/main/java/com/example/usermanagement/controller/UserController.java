@@ -91,6 +91,13 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
     }
 
+    @GetMapping("/avatar")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> getAvatar(Principal principal) {
+        String avatarUrl = userService.getUserAvatar(principal.getName());
+        return ResponseEntity.ok(Map.of("url", avatarUrl));
+    }
+
     @PostMapping(value = "/upload-avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Map<String, String>> uploadAvatar(
@@ -102,5 +109,12 @@ public class UserController {
                 "message", "Avatar updated successfully",
                 "url", imageUrl
         ));
+    }
+
+    @PostMapping("/remove-avatar")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeAvatar(Principal principal) {
+        userService.removeAvatar(principal.getName());
+        return ResponseEntity.ok(Map.of("message", "Avatar removed successfully"));
     }
 }

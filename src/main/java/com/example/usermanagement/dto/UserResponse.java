@@ -11,6 +11,8 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserResponse {
+    private static final String DEFAULT_AVATAR = "https://res.cloudinary.com/sumancfc/image/upload/v1776631428/avatar_j91ep0.jpg";
+
     private Long id;
     private String username;
     private String email;
@@ -19,4 +21,9 @@ public class UserResponse {
     private String phoneNumber;
     private String bio;
     private Set<String> roles;
+    private String avatarUrl;
+
+    public String getAvatarUrl() {
+        return (avatarUrl == null || avatarUrl.isEmpty()) ? DEFAULT_AVATAR : avatarUrl;
+    }
 }

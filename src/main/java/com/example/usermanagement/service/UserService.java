@@ -8,6 +8,7 @@ import com.example.usermanagement.entity.User;
 import com.example.usermanagement.exception.BusinessException;
 import com.example.usermanagement.exception.ResourceNotFoundException;
 import com.example.usermanagement.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -106,6 +108,17 @@ public class UserService {
         userRepository.save(user);
     }
 
+    public String getUserAvatar(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        UserResponse response = UserResponse.builder()
+                .avatarUrl(user.getAvatarUrl())
+                .build();
+
+        return response.getAvatarUrl();
+    }
+
     @Transactional
     public String updateAvatar(String username, MultipartFile file) {
         User user = userRepository.findByUsername(username).orElseThrow(
@@ -134,6 +147,25 @@ public class UserService {
         }
     }
 
+    @Transactional
+    public void removeAvatar(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
+            try {
+                String publicId = "user_avatar/avatar_" + user.getUsername();
+
+                Map result = cloudinary.uploader().destroy(publicId, Map.of("invalidate", true));
+            } catch (IOException e) {
+                System.err.println("Cloudinary communication error: " + e.getMessage());
+            }
+        }
+
+        user.setAvatarUrl(null);
+        userRepository.save(user);
+    }
+
     private String formatRoleName(String role) {
         return role.startsWith("ROLE_") ? role.toUpperCase() : "ROLE_" + role.toUpperCase();
     }
@@ -152,6 +184,7 @@ public class UserService {
                 .phoneNumber(user.getPhoneNumber())
                 .bio(user.getBio())
                 .roles(user.getRoles())
+                .avatarUrl(user.getAvatarUrl())
                 .build();
     }
 }
