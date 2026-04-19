@@ -1,8 +1,8 @@
 package com.example.usermanagement.service;
 
+import com.example.usermanagement.dto.ProfileUpdateDTO;
 import com.example.usermanagement.entity.User;
 import com.example.usermanagement.repository.UserRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
@@ -30,5 +30,20 @@ public class UserService {
             return true;
         }
         return false;
+    }
+
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User updateProfile(String username, ProfileUpdateDTO dto) {
+        User user = findByUsername(username);
+
+        if (dto.getFullName() != null) user.setFullName(dto.getFullName());
+        if (dto.getGender() != null) user.setGender(dto.getGender());
+        if (dto.getBio() != null) user.setBio(dto.getBio());
+        if (dto.getPhoneNumber() != null) user.setPhoneNumber(dto.getPhoneNumber());
+
+        return userRepository.save(user);
     }
 }
