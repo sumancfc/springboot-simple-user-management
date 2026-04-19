@@ -5,9 +5,11 @@ import com.example.usermanagement.dto.ProfileUpdateDTO;
 import com.example.usermanagement.dto.UserResponse;
 import com.example.usermanagement.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -87,5 +89,18 @@ public class UserController {
 
         userService.changePassword(principal.getName(), request);
         return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
+    }
+
+    @PostMapping(value = "/upload-avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> uploadAvatar(
+            Principal principal,
+            @RequestParam("file") MultipartFile file) {
+
+        String imageUrl = userService.updateAvatar(principal.getName(), file);
+        return ResponseEntity.ok(Map.of(
+                "message", "Avatar updated successfully",
+                "url", imageUrl
+        ));
     }
 }

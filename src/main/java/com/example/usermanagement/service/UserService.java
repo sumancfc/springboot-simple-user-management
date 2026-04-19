@@ -1,5 +1,6 @@
 package com.example.usermanagement.service;
 
+import com.cloudinary.Cloudinary;
 import com.example.usermanagement.dto.ChangePasswordRequest;
 import com.example.usermanagement.dto.ProfileUpdateDTO;
 import com.example.usermanagement.dto.UserResponse;
@@ -10,19 +11,24 @@ import com.example.usermanagement.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Cloudinary cloudinary;
 
     // TODO:: Remove UserService Constructor with @RequiredArgsConstructor annotations in future
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, Cloudinary cloudinary) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.cloudinary = cloudinary;
     }
 
     public List<UserResponse> getAllUsers() {
@@ -98,6 +104,34 @@ public class UserService {
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+    }
+
+    @Transactional
+    public String updateAvatar(String username, MultipartFile file) {
+        User user = userRepository.findByUsername(username).orElseThrow(
+                () -> new ResourceNotFoundException("User not found")
+        );
+
+        if(file.isEmpty()) {
+            throw new BusinessException("File is empty");
+        }
+
+        try {
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), Map.of(
+                    "public_id", "avatar_" + user.getUsername(),
+                    "folder", "user_avatar",
+                    "transformation", "w_200,h_200,c_fill,g_face"
+            ));
+
+            String url = (String) uploadResult.get("secure_url");
+
+            user.setAvatarUrl(url);
+            userRepository.save(user);
+
+            return url;
+        } catch (IOException e) {
+            throw new BusinessException("Failed to upload image to Cloudinary");
+        }
     }
 
     private String formatRoleName(String role) {
