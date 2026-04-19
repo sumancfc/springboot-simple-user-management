@@ -1,20 +1,57 @@
 # 🚀 User Management System
 
-A robust backend REST API built with **Spring Boot 3**, **Spring Security**, and **PostgreSQL**. This project features user registration with password encryption, authentication, and full user management capabilities.
+A comprehensive and secure backend REST API for user management, built with **Spring Boot 3**, **Spring Security**, and **PostgreSQL**. This project provides robust authentication, authorization, and user lifecycle management features, including JWT-based session handling, role-based access control (RBAC), two-factor authentication (2FA), email verification, password reset, and administrative controls. It ensures data security through password encryption, token blacklisting, and secure API endpoints, making it ideal for scalable web applications requiring user-centric functionalities.
 
 ## 🛠 Tech Stack
-- **Java 24**
+- **Java 21**
 - **Spring Boot 3.x** (Web, Data JPA, Security, Validation)
 - **PostgreSQL** (Database)
 - **Lombok** (Boilerplate reduction)
 - **BCrypt** (Password hashing)
 
-## 🏗 Project Architecture
-The project follows a standard **Layered Architecture**:
-- `Controller`: Handles HTTP requests and API versioning.
-- `Service`: Contains business logic and security processing.
-- `Repository`: Interface for PostgreSQL database interactions.
-- `Entity`: Database models and validation constraints.
+## 📁 Project Structure
+```
+usermanagement/
+├── HELP.md
+├── README.md
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── example/
+│   │   │           └── usermanagement/
+│   │   │               ├── UsermanagementApplication.java
+│   │   │               ├── config/
+│   │   │               ├── controller/
+│   │   │               ├── dto/
+│   │   │               ├── entity/
+│   │   │               ├── exception/
+│   │   │               ├── repository/
+│   │   │               ├── service/
+│   │   │               └── utils/
+│   │   └── resources/
+│   │       ├── application.properties
+│   │       ├── application.properties.example
+│   │       ├── static/
+│   │       └── templates/
+│   └── test/
+│       └── java/
+│           └── com/
+│               └── example/
+│                   └── usermanagement/
+│                       └── UsermanagementApplicationTests.java
+└── target/
+    ├── classes/
+    ├── generated-sources/
+    ├── generated-test-sources/
+    ├── maven-archiver/
+    ├── maven-status/
+    ├── surefire-reports/
+    └── test-classes/
+```
 
 ## 🚀 Getting Started
 
