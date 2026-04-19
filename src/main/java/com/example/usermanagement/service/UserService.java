@@ -6,6 +6,7 @@ import com.example.usermanagement.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -43,6 +44,29 @@ public class UserService {
         if (dto.getGender() != null) user.setGender(dto.getGender());
         if (dto.getBio() != null) user.setBio(dto.getBio());
         if (dto.getPhoneNumber() != null) user.setPhoneNumber(dto.getPhoneNumber());
+
+        return userRepository.save(user);
+    }
+
+    public User assignRole(Long userId, String role) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new RuntimeException("User not found")
+        );
+
+        String roleName = role.startsWith("ROLE_") ? role.toUpperCase() : "ROLE_" + role.toUpperCase();
+
+        user.getRoles().add(roleName);
+
+        return userRepository.save(user);
+    }
+
+    public User revokeRole(Long userId, String role) {
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new RuntimeException("User not found"));
+
+        String roleName = role.startsWith("ROLE_") ? role.toUpperCase() : "ROLE_" + role.toUpperCase();
+
+        user.getRoles().remove(roleName);
 
         return userRepository.save(user);
     }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -54,5 +55,33 @@ public class UserController {
         User updatedUser = userService.updateProfile(principal.getName(), updateData);
 
         return ResponseEntity.ok(updatedUser);
+    }
+
+    @PostMapping("/assign-role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<User> assignRole(@RequestParam Long userId, @RequestParam String role) {
+        return ResponseEntity.ok(userService.assignRole(userId, role));
+    }
+
+    @PostMapping("/revoke-role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<User> revoke(@RequestParam Long userId, @RequestParam String role) {
+        return ResponseEntity.ok(userService.revokeRole(userId, role));
+    }
+
+    @GetMapping("/roles/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Set<String>> getUserRoles(@PathVariable Long userId) {
+        User user = userService.getUserById(userId).orElseThrow(
+                () -> new RuntimeException("User not found")
+        );
+
+        return ResponseEntity.ok(user.getRoles());
+    }
+
+    @GetMapping("/roles")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<String>> getAllAvailableRoles() {
+        return ResponseEntity.ok(List.of("ROLE_USER", "ROLE_ADMIN", "ROLE_MODERATOR"));
     }
 }
