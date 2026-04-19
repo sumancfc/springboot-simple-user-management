@@ -40,8 +40,8 @@ public class AuthService {
         user.setEmail(request.getEmail());
         // Hash the password
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-
         user.setRoles(new HashSet<>(Set.of("ROLE_USER")));
+
         userRepository.save(user);
     }
 
@@ -88,13 +88,13 @@ public class AuthService {
                 Duration.ofDays(7)
         );
 
-        return new LoginResponse(
-                accessToken,
-                refreshToken,
-                user.getUsername(),
-                user.getRoles(),
-                "Login Successful!"
-        );
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .username(user.getUsername())
+                .roles(user.getRoles())
+                .message("Login Successful!")
+                .build();
     }
 
     public void logout(String accessToken, String refreshToken) {
@@ -112,7 +112,7 @@ public class AuthService {
             // If the token is old/not in Redis, it won't have a username associated with it
             if (storedUsername == null || !storedUsername.equals(username)) {
                 log.warn("Invalid or expired refresh token provided for logout: {}", refreshToken);
-                throw new RuntimeException("Invalid or expired Refresh Token. Logout failed.");
+                throw new BusinessException("Invalid or expired Refresh Token. Logout failed.");
             }
 
             // Only delete if validation passed
@@ -145,7 +145,6 @@ public class AuthService {
 
         // Generate only a new Access Token
         String newAccessToken = jwtUtils.generateToken(username, user.getRoles());
-
         String newRefreshToken = jwtUtils.generateRefreshToken();
 
         redisTemplate.opsForValue().set(
@@ -167,13 +166,13 @@ public class AuthService {
                 Duration.ofDays(7)
         );
 
-        // Return a response
-        return new LoginResponse(
-                newAccessToken,
-                newRefreshToken,
-                username,
-                user.getRoles(),
-                "Token refreshed and rotated successfully"
-        );
+        // Use Builder for clean return
+        return LoginResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .username(username)
+                .roles(user.getRoles())
+                .message("Token refreshed and rotated successfully")
+                .build();
     }
 }

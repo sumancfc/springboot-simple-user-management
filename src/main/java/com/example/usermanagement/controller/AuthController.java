@@ -25,26 +25,21 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest request) {
         authService.register(request);
         return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request, @RequestBody LogoutRequest logoutRequest) {
+    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request, @RequestBody LogoutRequest logoutRequest) {
         String accessToken = SecurityUtils.extractToken(request);
         String refreshToken = logoutRequest.getRefreshToken();
-
-        if (accessToken == null || accessToken.trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "No valid Access Token provided in headers"));
-        }
 
         authService.logout(accessToken, refreshToken);
         SecurityContextHolder.clearContext();
@@ -53,7 +48,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshRequest request) {
+    public ResponseEntity<LoginResponse> refreshToken(@Valid @RequestBody RefreshRequest request) {
         LoginResponse response = authService.refreshSession(request.getRefreshToken());
         return ResponseEntity.ok(response);
     }

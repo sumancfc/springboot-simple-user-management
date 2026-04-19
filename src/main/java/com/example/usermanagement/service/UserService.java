@@ -1,6 +1,7 @@
 package com.example.usermanagement.service;
 
 import com.example.usermanagement.dto.ProfileUpdateDTO;
+import com.example.usermanagement.dto.UserResponse;
 import com.example.usermanagement.entity.User;
 import com.example.usermanagement.exception.ResourceNotFoundException;
 import com.example.usermanagement.repository.UserRepository;
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -18,13 +19,21 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
     }
 
-    public User getUserById(Long id) {
+    // Helper: Internal method to get the Entity (stays private/protected)
+    private User getUserEntityById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
+    }
+
+    public UserResponse getUserById(Long id) {
+        return convertToResponse(getUserEntityById(id));
     }
 
     @Transactional
@@ -35,43 +44,57 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public User findByUsername(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    public UserResponse findByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+        return convertToResponse(user);
     }
 
     @Transactional
-    public User updateProfile(String username, ProfileUpdateDTO dto) {
-        User user = findByUsername(username);
+    public UserResponse updateProfile(String username, ProfileUpdateDTO dto) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
 
         if (dto.getFullName() != null) user.setFullName(dto.getFullName());
         if (dto.getGender() != null) user.setGender(dto.getGender());
         if (dto.getBio() != null) user.setBio(dto.getBio());
         if (dto.getPhoneNumber() != null) user.setPhoneNumber(dto.getPhoneNumber());
 
-        return userRepository.save(user);
+        return convertToResponse(userRepository.save(user));
     }
 
     @Transactional
-    public User assignRole(Long userId, String role) {
-        User user = getUserById(userId);
-
-        String roleName = formatRoleName(role);
-        user.getRoles().add(roleName);
-
-        return userRepository.save(user);
+    public UserResponse assignRole(Long userId, String role) {
+        User user = getUserEntityById(userId);
+        user.getRoles().add(formatRoleName(role));
+        return convertToResponse(userRepository.save(user));
     }
 
     @Transactional
-    public User revokeRole(Long userId, String role) {
-        User user = getUserById(userId);
-
-        String roleName = formatRoleName(role);
-        user.getRoles().remove(roleName);
-
-        return userRepository.save(user);
+    public UserResponse revokeRole(Long userId, String role) {
+        User user = getUserEntityById(userId);
+        user.getRoles().remove(formatRoleName(role));
+        return convertToResponse(userRepository.save(user));
     }
 
     private String formatRoleName(String role) {
         return role.startsWith("ROLE_") ? role.toUpperCase() : "ROLE_" + role.toUpperCase();
+    }
+
+    /**
+     * The Mapping Engine
+     * This private method handles the conversion from Entity to DTO in one place.
+     */
+    private UserResponse convertToResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .gender(user.getGender())
+                .phoneNumber(user.getPhoneNumber())
+                .bio(user.getBio())
+                .roles(user.getRoles())
+                .build();
     }
 }
