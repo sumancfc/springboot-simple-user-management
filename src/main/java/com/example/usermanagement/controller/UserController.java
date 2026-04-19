@@ -1,9 +1,10 @@
 package com.example.usermanagement.controller;
 
+import com.example.usermanagement.dto.ChangePasswordRequest;
 import com.example.usermanagement.dto.ProfileUpdateDTO;
 import com.example.usermanagement.dto.UserResponse;
-import com.example.usermanagement.entity.User;
 import com.example.usermanagement.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -42,14 +43,14 @@ public class UserController {
     }
 
     @GetMapping("/profile")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> getMyProfile(java.security.Principal principal) {
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<UserResponse> getMyProfile(Principal principal) {
         return ResponseEntity.ok(userService.findByUsername(principal.getName()));
     }
 
     @PutMapping("/profile")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<UserResponse> updateUserProfile(java.security.Principal principal, @RequestBody ProfileUpdateDTO updateData) {
+    public ResponseEntity<UserResponse> updateUserProfile(Principal principal, @RequestBody ProfileUpdateDTO updateData) {
         return ResponseEntity.ok(userService.updateProfile(principal.getName(), updateData));
     }
 
@@ -76,5 +77,15 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<String>> getAllAvailableRoles() {
         return ResponseEntity.ok(List.of("ROLE_USER", "ROLE_ADMIN", "ROLE_MODERATOR"));
+    }
+
+    @PostMapping("/change-password")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> changePassword(
+            Principal principal,
+            @Valid @RequestBody ChangePasswordRequest request) {
+
+        userService.changePassword(principal.getName(), request);
+        return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
     }
 }

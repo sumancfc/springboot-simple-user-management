@@ -1,10 +1,13 @@
 package com.example.usermanagement.service;
 
+import com.example.usermanagement.dto.ChangePasswordRequest;
 import com.example.usermanagement.dto.ProfileUpdateDTO;
 import com.example.usermanagement.dto.UserResponse;
 import com.example.usermanagement.entity.User;
+import com.example.usermanagement.exception.BusinessException;
 import com.example.usermanagement.exception.ResourceNotFoundException;
 import com.example.usermanagement.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,9 +17,12 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    // TODO:: Remove UserService Constructor with @RequiredArgsConstructor annotations in future
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<UserResponse> getAllUsers() {
@@ -75,6 +81,23 @@ public class UserService {
         User user = getUserEntityById(userId);
         user.getRoles().remove(formatRoleName(role));
         return convertToResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if(!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BusinessException("Current password does not match our records.");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new BusinessException("New password cannot be the same as the old password.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     private String formatRoleName(String role) {
