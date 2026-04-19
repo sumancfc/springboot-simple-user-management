@@ -30,21 +30,18 @@ public class UserController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
-        return userService.getUserById(id).map(user -> ResponseEntity.ok(user))
-                .orElse(ResponseEntity.status(404).body(null));
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteUserById(@PathVariable Long id) {
-        if (!userService.deleteUser(id)) {
-            throw new RuntimeException("User not found with ID " + id);
-        }
+        userService.deleteUser(id);
         return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
 
     @GetMapping("/profile")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<User> getMyProfile(java.security.Principal principal) {
         return ResponseEntity.ok(userService.findByUsername(principal.getName()));
     }
@@ -72,9 +69,7 @@ public class UserController {
     @GetMapping("/roles/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Set<String>> getUserRoles(@PathVariable Long userId) {
-        User user = userService.getUserById(userId).orElseThrow(
-                () -> new RuntimeException("User not found")
-        );
+        User user = userService.getUserById(userId);
 
         return ResponseEntity.ok(user.getRoles());
     }

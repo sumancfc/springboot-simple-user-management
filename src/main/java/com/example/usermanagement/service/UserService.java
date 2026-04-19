@@ -2,11 +2,12 @@ package com.example.usermanagement.service;
 
 import com.example.usermanagement.dto.ProfileUpdateDTO;
 import com.example.usermanagement.entity.User;
+import com.example.usermanagement.exception.ResourceNotFoundException;
 import com.example.usermanagement.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -21,22 +22,24 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
     }
 
-    public boolean deleteUser(Long id) {
-        if(userRepository.existsById(id)) {
-            userRepository.deleteById(id);
-            return true;
+    @Transactional
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Cannot delete. User not found with ID: " + id);
         }
-        return false;
+        userRepository.deleteById(id);
     }
 
     public User findByUsername(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));
+        return userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
+    @Transactional
     public User updateProfile(String username, ProfileUpdateDTO dto) {
         User user = findByUsername(username);
 
@@ -48,26 +51,27 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Transactional
     public User assignRole(Long userId, String role) {
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new RuntimeException("User not found")
-        );
+        User user = getUserById(userId);
 
-        String roleName = role.startsWith("ROLE_") ? role.toUpperCase() : "ROLE_" + role.toUpperCase();
-
+        String roleName = formatRoleName(role);
         user.getRoles().add(roleName);
 
         return userRepository.save(user);
     }
 
+    @Transactional
     public User revokeRole(Long userId, String role) {
-        User user = userRepository.findById(userId).orElseThrow(() ->
-                new RuntimeException("User not found"));
+        User user = getUserById(userId);
 
-        String roleName = role.startsWith("ROLE_") ? role.toUpperCase() : "ROLE_" + role.toUpperCase();
-
+        String roleName = formatRoleName(role);
         user.getRoles().remove(roleName);
 
         return userRepository.save(user);
+    }
+
+    private String formatRoleName(String role) {
+        return role.startsWith("ROLE_") ? role.toUpperCase() : "ROLE_" + role.toUpperCase();
     }
 }

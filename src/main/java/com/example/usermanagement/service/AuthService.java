@@ -5,6 +5,8 @@ import com.example.usermanagement.dto.LoginRequest;
 import com.example.usermanagement.dto.LoginResponse;
 import com.example.usermanagement.dto.RegisterRequest;
 import com.example.usermanagement.entity.User;
+import com.example.usermanagement.exception.BusinessException;
+import com.example.usermanagement.exception.ResourceNotFoundException;
 import com.example.usermanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +32,7 @@ public class AuthService {
     @Transactional
     public void register(RegisterRequest request) {
         if(userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username '" + request.getUsername() + "' is already taken.");
+            throw new BusinessException("Username '" + request.getUsername() + "' is already taken.");
         }
 
         User user = new User();
@@ -46,10 +48,10 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         // Authenticate user
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("Invalid username or password."));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + request.getUsername()));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid username or password.");
+            throw new BusinessException("Invalid username or password.");
         }
 
         // ENFORCE SINGLE SESSION: Kill the previous token if it exists
@@ -97,7 +99,7 @@ public class AuthService {
 
     public void logout(String accessToken, String refreshToken) {
         if (accessToken == null || accessToken.isEmpty()) {
-            throw new RuntimeException("Access Token is required"); // Throw instead of just logging
+            throw new BusinessException("Access Token is required");
         }
 
         // Get user from Access Token
@@ -133,11 +135,11 @@ public class AuthService {
         String username = redisTemplate.opsForValue().get("refresh:" + refreshToken);
 
         if (username == null) {
-            throw new RuntimeException("Session expired. Please log in again.");
+            throw new BusinessException("Session expired. Please log in again.");
         }
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found for the given session."));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for the given session."));
 
         redisTemplate.delete("refresh:" + refreshToken);
 
